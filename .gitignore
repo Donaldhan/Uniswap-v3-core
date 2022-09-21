@@ -3,3 +3,17 @@ cache/
 crytic-export/
 node_modules/
 typechain/
+# IntelliJ project files
+.idea
+.settings
+.project
+.classpath
+*.iml
+*.bat
+out
+gen
+logs
+logs-shadow
+target
+.DS_Store
+rocks-db
