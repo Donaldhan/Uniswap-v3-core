@@ -110,7 +110,12 @@ liquidity (𝑙): 用于表示上次位置点的虚拟流动性；
 
 
 
-# 
+# todo
+
+blog
+
+[jit-liquidity](https://uniswap.org/blog/jit-liquidity)  
+[graphical-guide-for-understanding-uniswap](https://docs.ethhub.io/guides/graphical-guide-for-understanding-uniswap/)    
 
 
 
@@ -142,4 +147,5 @@ V3通过Position-Indexed State可以计算相应的uncollected fees。
 [Uniswap v3 详解（一）：设计原理](https://liaoph.com/uniswap-v3-1/) 
 [Uniswap V3 白皮书](https://uniswap.org/whitepaper-v3.pdf) 
 [uniswap-v3 blog](https://uniswap.org/blog/uniswap-v3/) 
-
+[jit-liquidity](https://uniswap.org/blog/jit-liquidity)  
+[graphical-guide-for-understanding-uniswap](https://docs.ethhub.io/guides/graphical-guide-for-understanding-uniswap/)    
