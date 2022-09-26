@@ -63,10 +63,10 @@ tick(ic)= log(sqrt[basePrice]^sqrt[p]);
 
 我们使用L和sqrt(p)跟踪流动性，主要是因为在每个tick，任何时间swap的产生，将会导致sqrt(p)的变动；
 
-[𝑓𝑔,0-𝑓𝑔,1]为swap的全局费用区间, 收费时，以(0.0001%)为基点进行收费；
+[𝑓𝑔,0/𝑓𝑔,1]为swap的全局token0, token1费用, 收费时，以(0.0001%)为基点进行收费；
 
 
-[𝑓𝑝,0-𝑓𝑝,1]为协议费用区间，具体到交易池；
+[𝑓𝑝,0/𝑓𝑝,1]为协议token0, token1费用，具体到交易池；
 
 
 
@@ -85,7 +85,7 @@ tick(ic)= log(sqrt[basePrice]^sqrt[p]);
 
 liquidityNet(Δ𝐿):每个tick内的流动性；
 liquidityGross(𝐿𝑔):用于判断当流动性不在给定的范围内时，是否需要更新ticks bitMap;
- [𝑓𝑜,0-𝑓𝑜,1]：用于追踪在给你定范围内的fee；
+ [𝑓𝑜,0/𝑓𝑜,1]：用于追踪token0, token1在给你定范围外的fee；
 secondsOutside, tickCumulativeOutside,secondsPerLiquidityOutsideX128：用于计算合约外部的更细粒度的收益；
 
 
@@ -98,7 +98,7 @@ secondsOutside, tickCumulativeOutside,secondsPerLiquidityOutsideX128：用于计
 | uint256  | feeGrowthInside1LastX128  | 𝑓𝑟,1 (𝑡0) |   
 
 liquidity (𝑙): 用于表示上次位置点的虚拟流动性；
- [𝑓𝑟,0 (𝑡0) -𝑓𝑟,1 (𝑡0)]：：用于计算uncollected fees；
+ [𝑓𝑟,0 (𝑡0) / 𝑓𝑟,1 (𝑡0)]：用于计算token0, token1的uncollected fees；
 
 
 
@@ -108,6 +108,11 @@ liquidity (𝑙): 用于表示上次位置点的虚拟流动性；
 
 
 
+# 合约
+
+
+* IUniswapV3PoolImmutables：交易池常量，比如：工厂地址、交易pair， token0，token1的地址，及tickspacing和每个池的最大流动性；
+* IUniswapV3PoolImmutables：用户记录交易池的状态，比如tick的费用信息，以及tick的oracle追踪信息（observations）；
 
 
 
