@@ -110,12 +110,10 @@ liquidity (𝑙): 用于表示上次位置点的虚拟流动性；
 
 
 
+
 # todo
 
 blog
-
-[jit-liquidity](https://uniswap.org/blog/jit-liquidity)  
-[graphical-guide-for-understanding-uniswap](https://docs.ethhub.io/guides/graphical-guide-for-understanding-uniswap/)    
 
 
 

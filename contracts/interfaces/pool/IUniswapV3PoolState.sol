@@ -1,23 +1,35 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
-/// @title Pool state that can change
+/// @title Pool state that can change， 交易池状态
 /// @notice These methods compose the pool's state, and can change with any frequency including multiple times
 /// per transaction
+/**
+ * 在每个交易发生时，交易池的状态将有可能发生任意频次的变更；
+ */
 interface IUniswapV3PoolState {
     /// @notice The 0th storage slot in the pool stores many values, and is exposed as a single method to save gas
     /// when accessed externally.
+    /// slot0存储交易池一些值，作为外部访问节省gas的暴露接口
     /// @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
+    /// sqrtPriceX96为交易池当前价格 sqrt(token1/token0) Q64.96；
     /// tick The current tick of the pool, i.e. according to the last tick transition that was run.
     /// This value may not always be equal to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96) if the price is on a tick
     /// boundary.
+    /// 交易池当前tick，比如最近一次run的tick交易；如果价格在tick的边界，此值不总是等于 to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96)
     /// observationIndex The index of the last oracle observation that was written,
+    /// oracle观察者最新写的索引；
     /// observationCardinality The current maximum number of observations stored in the pool,
+    /// oracle观察者当前存储在交易池最大基点；
     /// observationCardinalityNext The next maximum number of observations, to be updated when the observation.
+    /// oracle观察者下一次更新的最大基点
     /// feeProtocol The protocol fee for both tokens of the pool.
+    /// 交易池协议手续费
     /// Encoded as two 4 bit values, where the protocol fee of token1 is shifted 4 bits and the protocol fee of token0
     /// is the lower 4 bits. Used as the denominator of a fraction of the swap fee, e.g. 4 means 1/4th of the swap fee.
+    /// feeProtocol为token1和token0的fee编码；每个费用占4为；token1的fee为高4bit；token0的交易非为低4位
     /// unlocked Whether the pool is currently locked to reentrancy
+    /// 交易池当前是否解锁
     function slot0()
         external
         view
@@ -32,18 +44,22 @@ interface IUniswapV3PoolState {
         );
 
     /// @notice The fee growth as a Q128.128 fees of token0 collected per unit of liquidity for the entire life of the pool
+    /// 在整个池声明周期内，每个流动性unit，token0增加的fee
     /// @dev This value can overflow the uint256
     function feeGrowthGlobal0X128() external view returns (uint256);
 
     /// @notice The fee growth as a Q128.128 fees of token1 collected per unit of liquidity for the entire life of the pool
+    /// 在整个池声明周期内，每个流动性unit，token1增加的fee
     /// @dev This value can overflow the uint256
     function feeGrowthGlobal1X128() external view returns (uint256);
 
     /// @notice The amounts of token0 and token1 that are owed to the protocol
+    /// token0 and token1拥有的协议fee费用
     /// @dev Protocol fees will never exceed uint128 max in either token
     function protocolFees() external view returns (uint128 token0, uint128 token1);
 
     /// @notice The currently in range liquidity available to the pool
+    /// 当前可以用的流动性范围
     /// @dev This value has no relationship to the total liquidity across all ticks
     function liquidity() external view returns (uint128);
 
