@@ -6,6 +6,7 @@ import './interfaces/IUniswapV3PoolDeployer.sol';
 import './UniswapV3Pool.sol';
 
 contract UniswapV3PoolDeployer is IUniswapV3PoolDeployer {
+    //交易池采纳数
     struct Parameters {
         address factory;
         address token0;
@@ -32,6 +33,9 @@ contract UniswapV3PoolDeployer is IUniswapV3PoolDeployer {
         int24 tickSpacing
     ) internal returns (address pool) {
         parameters = Parameters({factory: factory, token0: token0, token1: token1, fee: fee, tickSpacing: tickSpacing});
+        //创建交易池
+        //CREATE2 指令的具体解释可以参考：EIP-1014。solidity 在 0.6.2 版本后在语法层面支持了 CREATE2. 如果使用更低的版本，可以参考 Uniswap v2 的代码实现同样的功能。
+        //https://docs.soliditylang.org/en/latest/control-structures.html#salted-contract-creations-create2
         pool = address(new UniswapV3Pool{salt: keccak256(abi.encode(token0, token1, fee))}());
         delete parameters;
     }

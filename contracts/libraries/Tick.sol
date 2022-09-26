@@ -7,56 +7,62 @@ import './SafeCast.sol';
 import './TickMath.sol';
 import './LiquidityMath.sol';
 
-/// @title Tick
+/// @title Tick 包含tick的管理和相关计算
 /// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
     using LowGasSafeMath for int256;
     using SafeCast for int256;
 
-    // info stored for each initialized individual tick
+    // info stored for each initialized individual tick tick信息
     struct Info {
-        // the total position liquidity that references this tick
+        // the total position liquidity that references this tick 当前tick流动性
         uint128 liquidityGross;
-        // amount of net liquidity added (subtracted) when tick is crossed from left to right (right to left),
+        // amount of net liquidity added (subtracted) when tick is crossed from left to right (right to left), tick交叉的流动性网格数量
         int128 liquidityNet;
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
+        //tick范围外的token0， token1增加fee
         uint256 feeGrowthOutside0X128;
         uint256 feeGrowthOutside1X128;
-        // the cumulative tick value on the other side of the tick
+        // the cumulative tick value on the other side of the tick tick范围累计的tick值
         int56 tickCumulativeOutside;
         // the seconds per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
+        // 相对于当前tick外的每个流动性单元的seconds，相对平均值
         uint160 secondsPerLiquidityOutsideX128;
         // the seconds spent on the other side of the tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
+        // 相对于当前tick外的花费的seconds，相对平均值
         uint32 secondsOutside;
         // true iff the tick is initialized, i.e. the value is exactly equivalent to the expression liquidityGross != 0
         // these 8 bits are set to prevent fresh sstores when crossing newly initialized ticks
+        // 是否初始化
         bool initialized;
     }
 
-    /// @notice Derives max liquidity per tick from given tick spacing
+    /// @notice Derives max liquidity per tick from given tick spacing 计算给定tickSpacing下每个tick的最大流动性
     /// @dev Executed within the pool constructor
     /// @param tickSpacing The amount of required tick separation, realized in multiples of `tickSpacing`
     ///     e.g., a tickSpacing of 3 requires ticks to be initialized every 3rd tick i.e., ..., -6, -3, 0, 3, 6, ...
     /// @return The max liquidity per tick
     function tickSpacingToMaxLiquidityPerTick(int24 tickSpacing) internal pure returns (uint128) {
-        int24 minTick = (TickMath.MIN_TICK / tickSpacing) * tickSpacing;
-        int24 maxTick = (TickMath.MAX_TICK / tickSpacing) * tickSpacing;
-        uint24 numTicks = uint24((maxTick - minTick) / tickSpacing) + 1;
+        int24 minTick = (TickMath.MIN_TICK / tickSpacing) * tickSpacing;//最大tick
+        int24 maxTick = (TickMath.MAX_TICK / tickSpacing) * tickSpacing;//最小tick
+        uint24 numTicks = uint24((maxTick - minTick) / tickSpacing) + 1;//tick数量
         return type(uint128).max / numTicks;
     }
 
-    /// @notice Retrieves fee growth data
-    /// @param self The mapping containing all tick information for initialized ticks
-    /// @param tickLower The lower tick boundary of the position
-    /// @param tickUpper The upper tick boundary of the position
-    /// @param tickCurrent The current tick
-    /// @param feeGrowthGlobal0X128 The all-time global fee growth, per unit of liquidity, in token0
-    /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
+    /// @notice Retrieves fee growth data 获取费用增长数据
+    /// @param self The mapping containing all tick information for initialized ticks  初始tick信息
+    /// @param tickLower The lower tick boundary of the position tick下限
+    /// @param tickUpper The upper tick boundary of the position tick上限
+    /// @param tickCurrent The current tick 当前tick
+    /// @param feeGrowthGlobal0X128 The all-time global fee growth, per unit of liquidity, in token0 token0每个流动性单元的全局增加费用
+    /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1 token1每个流动性单元的全局增加费用
     /// @return feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
+    // 在当期tick范围内的，token0每个流动性单元的增加费用
     /// @return feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
+    ///  // 在当期tick范围内的，token1每个流动性单元的增加费用
     function getFeeGrowthInside(
         mapping(int24 => Tick.Info) storage self,
         int24 tickLower,

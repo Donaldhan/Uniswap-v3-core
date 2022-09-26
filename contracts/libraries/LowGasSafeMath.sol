@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.7.0;
 
-/// @title Optimized overflow and underflow safe math operations
+/// @title Optimized overflow and underflow safe math operations 安全低gas的Math操作
 /// @notice Contains methods for doing math operations that revert on overflow or underflow for minimal gas cost
 library LowGasSafeMath {
-    /// @notice Returns x + y, reverts if sum overflows uint256
+    /// @notice Returns x + y, reverts if sum overflows uint256 无符号型加法
     /// @param x The augend
     /// @param y The addend
     /// @return z The sum of x and y
@@ -28,7 +28,7 @@ library LowGasSafeMath {
         require(x == 0 || (z = x * y) / x == y);
     }
 
-    /// @notice Returns x + y, reverts if overflows or underflows
+    /// @notice Returns x + y, reverts if overflows or underflows 有符号性加法
     /// @param x The augend
     /// @param y The addend
     /// @return z The sum of x and y

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
-/// @title Safe casting methods
+/// @title Safe casting methods 安全转换Math库
 /// @notice Contains methods for safely casting between types
 library SafeCast {
     /// @notice Cast a uint256 to a uint160, revert on overflow
