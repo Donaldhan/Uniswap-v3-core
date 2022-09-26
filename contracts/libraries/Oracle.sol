@@ -2,53 +2,62 @@
 pragma solidity >=0.5.0 <0.8.0;
 
 /// @title Oracle
-/// @notice Provides price and liquidity data useful for a wide variety of system designs
+/// @notice Provides price and liquidity data useful for a wide variety of system designs 提供价格和流动性预测；
 /// @dev Instances of stored oracle data, "observations", are collected in the oracle array
 /// Every pool is initialized with an oracle array length of 1. Anyone can pay the SSTOREs to increase the
 /// maximum length of the oracle array. New slots will be added when the array is fully populated.
+/// 存储oracle观察点的实例。 每个交易池初始化时，orcle长度为1。任何人可以增加oracle的长度。当数组满时，将会添加新的slot；
 /// Observations are overwritten when the full length of the oracle array is populated.
+/// 当oracl数组满时，将会重新观察点
 /// The most recent observation is available, independent of the length of the oracle array, by passing 0 to observe()
+/// 最近的观察点是可用的，独立与oracl数组的长度，通过传0给observe方法
 library Oracle {
+    //观察点
     struct Observation {
-        // the block timestamp of the observation
+        // the block timestamp of the observation 观察点区块时间戳
         uint32 blockTimestamp;
-        // the tick accumulator, i.e. tick * time elapsed since the pool was first initialized
+        // the tick accumulator, i.e. tick * time elapsed since the pool was first initialized 累计时间
         int56 tickCumulative;
         // the seconds per liquidity, i.e. seconds elapsed / max(1, liquidity) since the pool was first initialized
+        // 从交易池初始化开始，每个流动性经过的时间seconds
         uint160 secondsPerLiquidityCumulativeX128;
-        // whether or not the observation is initialized
+        // whether or not the observation is initialized 观察点是否初始化
         bool initialized;
     }
 
     /// @notice Transforms a previous observation into a new observation, given the passage of time and the current tick and liquidity values
+    /// 在给定时间，当前tick和流动性的情况下，基于先前的观察点，生成一个新的观察点
     /// @dev blockTimestamp _must_ be chronologically equal to or greater than last.blockTimestamp, safe for 0 or 1 overflows
-    /// @param last The specified observation to be transformed
-    /// @param blockTimestamp The timestamp of the new observation
-    /// @param tick The active tick at the time of the new observation
-    /// @param liquidity The total in-range liquidity at the time of the new observation
-    /// @return Observation The newly populated observation
+    /// 时间必须大于last.blockTimestamp
+    /// @param last The specified observation to be transformed 上个观察带你
+    /// @param blockTimestamp The timestamp of the new observation 新的观察点区块时间戳
+    /// @param tick The active tick at the time of the new observation 新的观察点激活的tick
+    /// @param liquidity The total in-range liquidity at the time of the new observation  在新观察点时间内总的流动性
+    /// @return Observation The newly populated observation 新的观察点
     function transform(
         Observation memory last,
         uint32 blockTimestamp,
         int24 tick,
         uint128 liquidity
     ) private pure returns (Observation memory) {
+        //观察点时间间隔
         uint32 delta = blockTimestamp - last.blockTimestamp;
         return
             Observation({
                 blockTimestamp: blockTimestamp,
-                tickCumulative: last.tickCumulative + int56(tick) * delta,
+                tickCumulative: last.tickCumulative + int56(tick) * delta,//累计的tick时间
                 secondsPerLiquidityCumulativeX128: last.secondsPerLiquidityCumulativeX128 +
-                    ((uint160(delta) << 128) / (liquidity > 0 ? liquidity : 1)),
+                    ((uint160(delta) << 128) / (liquidity > 0 ? liquidity : 1)), //每个流动性使用的时间seconds
                 initialized: true
             });
     }
 
     /// @notice Initialize the oracle array by writing the first slot. Called once for the lifecycle of the observations array
-    /// @param self The stored oracle array
-    /// @param time The time of the oracle initialization, via block.timestamp truncated to uint32
-    /// @return cardinality The number of populated elements in the oracle array
-    /// @return cardinalityNext The new length of the oracle array, independent of population
+    /// 通过写第一个slot，初始化oracle 数组；在观察点声明周期的开始点调用
+    /// @param self The stored oracle array 
+    /// @param time The time of the oracle initialization, via block.timestamp truncated to uint32 oracle初始化的时间戳
+    /// @return cardinality The number of populated elements in the oracle array oracle数组元素舒朗
+    /// @return cardinalityNext The new length of the oracle array, independent of population 新的oracle数组长度
     function initialize(Observation[65535] storage self, uint32 time)
         internal
         returns (uint16 cardinality, uint16 cardinalityNext)
@@ -62,19 +71,21 @@ library Oracle {
         return (1, 1);
     }
 
-    /// @notice Writes an oracle observation to the array
+    /// @notice Writes an oracle observation to the array 写oracle观察点到数组
     /// @dev Writable at most once per block. Index represents the most recently written element. cardinality and index must be tracked externally.
+    /// 在出块时，写入。Index表示最近写入的索引，cardinality and index用于内部追踪
     /// If the index is at the end of the allowable array length (according to cardinality), and the next cardinality
     /// is greater than the current one, cardinality may be increased. This restriction is created to preserve ordering.
+    ///  如果索引在数组允许长度的尾部，cardinality将会增加，前提条件是先前的观察点已经创建
     /// @param self The stored oracle array
-    /// @param index The index of the observation that was most recently written to the observations array
-    /// @param blockTimestamp The timestamp of the new observation
-    /// @param tick The active tick at the time of the new observation
-    /// @param liquidity The total in-range liquidity at the time of the new observation
-    /// @param cardinality The number of populated elements in the oracle array
+    /// @param index The index of the observation that was most recently written to the observations array 最近写入的观察点索引
+    /// @param blockTimestamp The timestamp of the new observation 新的观察点时间戳
+    /// @param tick The active tick at the time of the new observation 观察点tick
+    /// @param liquidity The total in-range liquidity at the time of the new observation 新观察点的流动性
+    /// @param cardinality The number of populated elements in the oracle array 数组元素个数 
     /// @param cardinalityNext The new length of the oracle array, independent of population
-    /// @return indexUpdated The new index of the most recently written element in the oracle array
-    /// @return cardinalityUpdated The new cardinality of the oracle array
+    /// @return indexUpdated The new index of the most recently written element in the oracle array 写入的观察点索引
+    /// @return cardinalityUpdated The new cardinality of the oracle array oracle数组新基点cardinalityUpdated
     function write(
         Observation[65535] storage self,
         uint16 index,
@@ -86,53 +97,54 @@ library Oracle {
     ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
         Observation memory last = self[index];
 
-        // early return if we've already written an observation this block
+        // early return if we've already written an observation this block 已经写入
         if (last.blockTimestamp == blockTimestamp) return (index, cardinality);
 
-        // if the conditions are right, we can bump the cardinality
+        // if the conditions are right, we can bump the cardinality 观察点基点总数
         if (cardinalityNext > cardinality && index == (cardinality - 1)) {
             cardinalityUpdated = cardinalityNext;
         } else {
             cardinalityUpdated = cardinality;
         }
-
+        //观察点索引
         indexUpdated = (index + 1) % cardinalityUpdated;
         self[indexUpdated] = transform(last, blockTimestamp, tick, liquidity);
     }
 
-    /// @notice Prepares the oracle array to store up to `next` observations
+    /// @notice Prepares the oracle array to store up to `next` observations 准备存储观察点
     /// @param self The stored oracle array
-    /// @param current The current next cardinality of the oracle array
-    /// @param next The proposed next cardinality which will be populated in the oracle array
-    /// @return next The next cardinality which will be populated in the oracle array
+    /// @param current The current next cardinality of the oracle array 当前oracle数组的cardinalityNext
+    /// @param next The proposed next cardinality which will be populated in the oracle array 提议的cardinalityNext
+    /// @return next The next cardinality which will be populated in the oracle array 返回最后的cardinalityNext
     function grow(
         Observation[65535] storage self,
         uint16 current,
         uint16 next
     ) internal returns (uint16) {
         require(current > 0, 'I');
-        // no-op if the passed next value isn't greater than the current next value
+        // no-op if the passed next value isn't greater than the current next value 在当前基点范围内
         if (next <= current) return current;
         // store in each slot to prevent fresh SSTOREs in swaps
         // this data will not be used because the initialized boolean is still false
+        //增加oracle数组观察点数量
         for (uint16 i = current; i < next; i++) self[i].blockTimestamp = 1;
         return next;
     }
 
-    /// @notice comparator for 32-bit timestamps
+    /// @notice comparator for 32-bit timestamps 比较32的时间戳
     /// @dev safe for 0 or 1 overflows, a and b _must_ be chronologically before or equal to time
     /// @param time A timestamp truncated to 32 bits
-    /// @param a A comparison timestamp from which to determine the relative position of `time`
-    /// @param b From which to determine the relative position of `time`
+    /// @param a A comparison timestamp from which to determine the relative position of `time` 比较时间戳的相对位置
+    /// @param b From which to determine the relative position of `time` 
     /// @return bool Whether `a` is chronologically <= `b`
     function lte(
         uint32 time,
         uint32 a,
         uint32 b
     ) private pure returns (bool) {
-        // if there hasn't been overflow, no need to adjust
+        // if there hasn't been overflow, no need to adjust a,b 都小于时间戳
         if (a <= time && b <= time) return a <= b;
-
+        
         uint256 aAdjusted = a > time ? a : a + 2**32;
         uint256 bAdjusted = b > time ? b : b + 2**32;
 

@@ -6,6 +6,7 @@ pragma solidity >=0.5.0;
 library BitMath {
     /// @notice Returns the index of the most significant bit of the number,
     ///     where the least significant bit is at index 0 and the most significant bit is at index 255
+    /// 返回当前数字最重要的bit索引
     /// @dev The function satisfies the property:
     ///     x >= 2**mostSignificantBit(x) and x < 2**(mostSignificantBit(x)+1)
     /// @param x the value for which to compute the most significant bit, must be greater than 0

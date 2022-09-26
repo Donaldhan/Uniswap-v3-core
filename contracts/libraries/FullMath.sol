@@ -6,9 +6,10 @@ pragma solidity >=0.4.0 <0.8.0;
 /// @dev Handles "phantom overflow" i.e., allows multiplication and division where an intermediate value overflows 256 bits
 library FullMath {
     /// @notice Calculates floor(a×b÷denominator) with full precision. Throws if result overflows a uint256 or denominator == 0
+    /// (a×b÷denominator) 向下取舍
     /// @param a The multiplicand
     /// @param b The multiplier
-    /// @param denominator The divisor
+    /// @param denominator The divisor 发、分母
     /// @return result The 256-bit result
     /// @dev Credit to Remco Bloemen under MIT license https://xn--2-umb.com/21/muldiv
     function mulDiv(
@@ -106,6 +107,7 @@ library FullMath {
     }
 
     /// @notice Calculates ceil(a×b÷denominator) with full precision. Throws if result overflows a uint256 or denominator == 0
+    /// (a×b÷denominator) 向上取舍
     /// @param a The multiplicand
     /// @param b The multiplier
     /// @param denominator The divisor

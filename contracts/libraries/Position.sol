@@ -5,23 +5,27 @@ import './FullMath.sol';
 import './FixedPoint128.sol';
 import './LiquidityMath.sol';
 
-/// @title Position
+/// @title Position 
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
-/// @dev Positions store additional state for tracking fees owed to the position
+/// 位置表示用户在tick范围内的流动性
+/// @dev Positions store additional state for tracking fees owed to the position 位置用于追踪每个位置的fee
 library Position {
-    // info stored for each user's position
+    // info stored for each user's position 用户每个位置信息
     struct Info {
-        // the amount of liquidity owned by this position
+        // the amount of liquidity owned by this position 当前位置拥有的流动性
         uint128 liquidity;
         // fee growth per unit of liquidity as of the last update to liquidity or fees owed
+        // 每个流动性单元增加的fee
         uint256 feeGrowthInside0LastX128;
         uint256 feeGrowthInside1LastX128;
         // the fees owed to the position owner in token0/token1
+        // 当前位置token0/token1 收益fee
         uint128 tokensOwed0;
         uint128 tokensOwed1;
     }
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries
+    // 返回用户在tick范围下的位置流动性信息
     /// @param self The mapping containing all user positions
     /// @param owner The address of the position owner
     /// @param tickLower The lower tick boundary of the position
@@ -36,9 +40,9 @@ library Position {
         position = self[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
-    /// @notice Credits accumulated fees to a user's position
+    /// @notice Credits accumulated fees to a user's position 
     /// @param self The individual position to update
-    /// @param liquidityDelta The change in pool liquidity as a result of the position update
+    /// @param liquidityDelta The change in pool liquidity as a result of the position update 位置更新的流动性差值
     /// @param feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
     /// @param feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
     function update(
@@ -47,9 +51,11 @@ library Position {
         uint256 feeGrowthInside0X128,
         uint256 feeGrowthInside1X128
     ) internal {
+        //当前位置信息
         Info memory _self = self;
 
         uint128 liquidityNext;
+        //计算最新的流动性
         if (liquidityDelta == 0) {
             require(_self.liquidity > 0, 'NP'); // disallow pokes for 0 liquidity positions
             liquidityNext = _self.liquidity;
@@ -57,7 +63,7 @@ library Position {
             liquidityNext = LiquidityMath.addDelta(_self.liquidity, liquidityDelta);
         }
 
-        // calculate accumulated fees
+        // calculate accumulated fees 计算token累计的费用
         uint128 tokensOwed0 =
             uint128(
                 FullMath.mulDiv(
@@ -79,6 +85,7 @@ library Position {
         if (liquidityDelta != 0) self.liquidity = liquidityNext;
         self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+        //更新获取的fee
         if (tokensOwed0 > 0 || tokensOwed1 > 0) {
             // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
             self.tokensOwed0 += tokensOwed0;
