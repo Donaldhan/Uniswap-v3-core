@@ -97,16 +97,16 @@ interface IUniswapV3PoolActions {
     ) external returns (int256 amount0, int256 amount1);
 
     /// @notice Receive token0 and/or token1 and pay it back, plus a fee, in the callback
-    /// 
+    /// 接收token0或token1，并在回调中支付相关的费用
     /// @dev The caller of this method receives a callback in the form of IUniswapV3FlashCallback#uniswapV3FlashCallback
-    /// 
+    /// 调用者回调形式IUniswapV3FlashCallback#uniswapV3FlashCallback
     /// @dev Can be used to donate underlying tokens pro-rata to currently in-range liquidity providers by calling
     /// with 0 amount{0,1} and sending the donation amount(s) from the callback
-    /// 
-    /// @param recipient The address which will receive the token0 and token1 amounts
-    /// @param amount0 The amount of token0 to send
-    /// @param amount1 The amount of token1 to send
-    /// @param data Any data to be passed through to the callback
+    /// 可以用于按比例捐赠底层token
+    /// @param recipient The address which will receive the token0 and token1 amounts 接收token0,1的地址
+    /// @param amount0 The amount of token0 to send 发送的token0数量
+    /// @param amount1 The amount of token1 to send 发送的token1数量
+    /// @param data Any data to be passed through to the callback 回调数据
     function flash(
         address recipient,
         uint256 amount0,
@@ -115,11 +115,11 @@ interface IUniswapV3PoolActions {
     ) external;
 
     /// @notice Increase the maximum number of price and liquidity observations that this pool will store
-    /// 
+    /// 增加池存储的最大价格和流动性观察信息
     /// @dev This method is no-op if the pool already has an observationCardinalityNext greater than or equal to
     /// the input observationCardinalityNext.
-    /// 
+    /// 如果pool中的oracle几点索引，已经大于当前参数observationCardinalityNext， 则是此方法为一个空操作
     /// @param observationCardinalityNext The desired minimum number of observations for the pool to store
-    /// 
+    /// 交易池需要存储的最小观察者基点位置
     function increaseObservationCardinalityNext(uint16 observationCardinalityNext) external;
 }

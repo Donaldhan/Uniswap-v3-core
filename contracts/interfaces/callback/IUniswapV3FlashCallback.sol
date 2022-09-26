@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
-/// @title Callback for IUniswapV3PoolActions#flash
+/// @title Callback for IUniswapV3PoolActions#flash 闪电贷回调
 /// @notice Any contract that calls IUniswapV3PoolActions#flash must implement this interface
 interface IUniswapV3FlashCallback {
     /// @notice Called to `msg.sender` after transferring to the recipient from IUniswapV3Pool#flash.

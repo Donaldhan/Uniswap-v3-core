@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
-/// @title Callback for IUniswapV3PoolActions#mint
+/// @title Callback for IUniswapV3PoolActions#mint 挖取流动性回调
 /// @notice Any contract that calls IUniswapV3PoolActions#mint must implement this interface
 interface IUniswapV3MintCallback {
     /// @notice Called to `msg.sender` after minting liquidity to a position from IUniswapV3Pool#mint.

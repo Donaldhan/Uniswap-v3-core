@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
-/// @title The interface for the Uniswap V3 Factory
+/// @title The interface for the Uniswap V3 Factory  Uniswap V3 工厂接口
 /// @notice The Uniswap V3 Factory facilitates creation of Uniswap V3 pools and control over the protocol fees
 interface IUniswapV3Factory {
-    /// @notice Emitted when the owner of the factory is changed
+    /// @notice Emitted when the owner of the factory is changed 工厂拥有者变更事件
     /// @param oldOwner The owner before the owner was changed
     /// @param newOwner The owner after the owner was changed
     event OwnerChanged(address indexed oldOwner, address indexed newOwner);
 
-    /// @notice Emitted when a pool is created
+    /// @notice Emitted when a pool is created 交易池创建时间
     /// @param token0 The first token of the pool by address sort order
     /// @param token1 The second token of the pool by address sort order
     /// @param fee The fee collected upon every swap in the pool, denominated in hundredths of a bip
@@ -23,23 +23,25 @@ interface IUniswapV3Factory {
         address pool
     );
 
-    /// @notice Emitted when a new fee amount is enabled for pool creation via the factory
-    /// @param fee The enabled fee, denominated in hundredths of a bip
-    /// @param tickSpacing The minimum number of ticks between initialized ticks for pools created with the given fee
+    /// @notice Emitted when a new fee amount is enabled for pool creation via the factory fee变更事件
+    /// @param fee The enabled fee, denominated in hundredths of a bip  bip的百分比费用
+    /// @param tickSpacing The minimum number of ticks between initialized ticks for pools created with the given fee 
     event FeeAmountEnabled(uint24 indexed fee, int24 indexed tickSpacing);
 
-    /// @notice Returns the current owner of the factory
+    /// @notice Returns the current owner of the factory 当前工厂的拥有者
     /// @dev Can be changed by the current owner via setOwner
     /// @return The address of the factory owner
     function owner() external view returns (address);
 
     /// @notice Returns the tick spacing for a given fee amount, if enabled, or 0 if not enabled
+    /// tick的fee；0为disable
     /// @dev A fee amount can never be removed, so this value should be hard coded or cached in the calling context
     /// @param fee The enabled fee, denominated in hundredths of a bip. Returns 0 in case of unenabled fee
-    /// @return The tick spacing
+    /// @return The tick spacing 返回tickSpacing
     function feeAmountTickSpacing(uint24 fee) external view returns (int24);
 
     /// @notice Returns the pool address for a given pair of tokens and a fee, or address 0 if it does not exist
+    /// 返回交易池地址，不存在则为0
     /// @dev tokenA and tokenB may be passed in either token0/token1 or token1/token0 order
     /// @param tokenA The contract address of either token0 or token1
     /// @param tokenB The contract address of the other token
@@ -51,7 +53,7 @@ interface IUniswapV3Factory {
         uint24 fee
     ) external view returns (address pool);
 
-    /// @notice Creates a pool for the given two tokens and fee
+    /// @notice Creates a pool for the given two tokens and fee 以交易fee创建基于token0，token1的交易池
     /// @param tokenA One of the two tokens in the desired pool
     /// @param tokenB The other of the two tokens in the desired pool
     /// @param fee The desired fee for the pool
@@ -65,12 +67,12 @@ interface IUniswapV3Factory {
         uint24 fee
     ) external returns (address pool);
 
-    /// @notice Updates the owner of the factory
+    /// @notice Updates the owner of the factory 设置工厂用哟组合
     /// @dev Must be called by the current owner
     /// @param _owner The new owner of the factory
     function setOwner(address _owner) external;
 
-    /// @notice Enables a fee amount with the given tickSpacing
+    /// @notice Enables a fee amount with the given tickSpacing tick费用
     /// @dev Fee amounts may never be removed once enabled
     /// @param fee The fee amount to enable, denominated in hundredths of a bip (i.e. 1e-6)
     /// @param tickSpacing The spacing between ticks to be enforced for all pools created with the given fee amount

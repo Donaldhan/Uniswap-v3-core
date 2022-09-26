@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
-/// @title Events emitted by a pool
+/// @title Events emitted by a pool 交易池事件
 /// @notice Contains all events emitted by the pool
 interface IUniswapV3PoolEvents {
-    /// @notice Emitted exactly once by a pool when #initialize is first called on the pool
+    /// @notice Emitted exactly once by a pool when #initialize is first called on the pool 初始化
     /// @dev Mint/Burn/Swap cannot be emitted by the pool before Initialize
     /// @param sqrtPriceX96 The initial sqrt price of the pool, as a Q64.96
     /// @param tick The initial tick of the pool, i.e. log base 1.0001 of the starting price of the pool
     event Initialize(uint160 sqrtPriceX96, int24 tick);
 
-    /// @notice Emitted when liquidity is minted for a given position
+    /// @notice Emitted when liquidity is minted for a given position 挖取流动性
     /// @param sender The address that minted the liquidity
     /// @param owner The owner of the position and recipient of any minted liquidity
     /// @param tickLower The lower tick of the position
@@ -28,7 +28,7 @@ interface IUniswapV3PoolEvents {
         uint256 amount1
     );
 
-    /// @notice Emitted when fees are collected by the owner of a position
+    /// @notice Emitted when fees are collected by the owner of a position 收集费用
     /// @dev Collect events may be emitted with zero amount0 and amount1 when the caller chooses not to collect fees
     /// @param owner The owner of the position for which fees are collected
     /// @param tickLower The lower tick of the position
@@ -44,7 +44,7 @@ interface IUniswapV3PoolEvents {
         uint128 amount1
     );
 
-    /// @notice Emitted when a position's liquidity is removed
+    /// @notice Emitted when a position's liquidity is removed 销毁流动性
     /// @dev Does not withdraw any fees earned by the liquidity position, which must be withdrawn via #collect
     /// @param owner The owner of the position for which liquidity is removed
     /// @param tickLower The lower tick of the position
@@ -61,7 +61,7 @@ interface IUniswapV3PoolEvents {
         uint256 amount1
     );
 
-    /// @notice Emitted by the pool for any swaps between token0 and token1
+    /// @notice Emitted by the pool for any swaps between token0 and token1 swap操作
     /// @param sender The address that initiated the swap call, and that received the callback
     /// @param recipient The address that received the output of the swap
     /// @param amount0 The delta of the token0 balance of the pool
@@ -79,7 +79,7 @@ interface IUniswapV3PoolEvents {
         int24 tick
     );
 
-    /// @notice Emitted by the pool for any flashes of token0/token1
+    /// @notice Emitted by the pool for any flashes of token0/token1 闪电贷操作
     /// @param sender The address that initiated the swap call, and that received the callback
     /// @param recipient The address that received the tokens from flash
     /// @param amount0 The amount of token0 that was flashed
@@ -95,7 +95,7 @@ interface IUniswapV3PoolEvents {
         uint256 paid1
     );
 
-    /// @notice Emitted by the pool for increases to the number of observations that can be stored
+    /// @notice Emitted by the pool for increases to the number of observations that can be stored oracle观察者信息变更
     /// @dev observationCardinalityNext is not the observation cardinality until an observation is written at the index
     /// just before a mint/swap/burn.
     /// @param observationCardinalityNextOld The previous value of the next observation cardinality
@@ -105,14 +105,14 @@ interface IUniswapV3PoolEvents {
         uint16 observationCardinalityNextNew
     );
 
-    /// @notice Emitted when the protocol fee is changed by the pool
+    /// @notice Emitted when the protocol fee is changed by the pool 交易池协议费用设置事件
     /// @param feeProtocol0Old The previous value of the token0 protocol fee
     /// @param feeProtocol1Old The previous value of the token1 protocol fee
     /// @param feeProtocol0New The updated value of the token0 protocol fee
     /// @param feeProtocol1New The updated value of the token1 protocol fee
     event SetFeeProtocol(uint8 feeProtocol0Old, uint8 feeProtocol1Old, uint8 feeProtocol0New, uint8 feeProtocol1New);
 
-    /// @notice Emitted when the collected protocol fees are withdrawn by the factory owner
+    /// @notice Emitted when the collected protocol fees are withdrawn by the factory owner 收集的费用被工厂拥有者提现时，发出
     /// @param sender The address that collects the protocol fees
     /// @param recipient The address that receives the collected protocol fees
     /// @param amount0 The amount of token0 protocol fees that is withdrawn
