@@ -113,7 +113,7 @@ liquidity (𝑙): 用于表示上次位置点的虚拟流动性；
 
 * IUniswapV3PoolImmutables：交易池常量，比如：工厂地址、交易pair， token0，token1的地址，及tickspacing和每个池的最大流动性；
 * IUniswapV3PoolImmutables：用户记录交易池的状态，比如tick的费用信息，以及tick的oracle追踪信息（observations）；
-
+* IUniswapV3PoolActions:
 
 
 # todo

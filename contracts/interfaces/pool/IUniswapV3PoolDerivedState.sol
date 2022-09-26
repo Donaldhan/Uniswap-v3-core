@@ -27,16 +27,16 @@ interface IUniswapV3PoolDerivedState {
         returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s);
 
     /// @notice Returns a snapshot of the tick cumulative, seconds per liquidity and seconds inside a tick range
-    ///
+    /// 返回tick累计，每个tick范围内流动性seconds
     /// @dev Snapshots must only be compared to other snapshots, taken over a period for which a position existed.
     /// I.e., snapshots cannot be compared if a position is not held for the entire period between when the first
     /// snapshot is taken and the second snapshot is taken.
-    /// 
-    /// @param tickLower The lower tick of the range
-    /// @param tickUpper The upper tick of the range
-    /// @return tickCumulativeInside The snapshot of the tick accumulator for the range
-    /// @return secondsPerLiquidityInsideX128 The snapshot of seconds per liquidity for the range
-    /// @return secondsInside The snapshot of seconds per liquidity for the range
+    /// 快照是基于其他存在的快照产生的；
+    /// @param tickLower The lower tick of the range  tick下限
+    /// @param tickUpper The upper tick of the range tick上限
+    /// @return tickCumulativeInside The snapshot of the tick accumulator for the range 范围内累计的tick数量
+    /// @return secondsPerLiquidityInsideX128 The snapshot of seconds per liquidity for the range  范围内累计的流动性seconds
+    /// @return secondsInside The snapshot of seconds per liquidity for the range tick范围内累计的流动性seconds
     function snapshotCumulativesInside(int24 tickLower, int24 tickUpper)
         external
         view
