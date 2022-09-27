@@ -486,6 +486,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         bytes calldata data
     ) external override lock returns (uint256 amount0, uint256 amount1) {
         require(amount > 0);
+        //计算token0，token1输入的数量
         (, int256 amount0Int, int256 amount1Int) =
             _modifyPosition(
                 ModifyPositionParams({
@@ -498,20 +499,21 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         amount0 = uint256(amount0Int);
         amount1 = uint256(amount1Int);
-
+        //token0，token1, 当前流动池储备量
         uint256 balance0Before;
         uint256 balance1Before;
         if (amount0 > 0) balance0Before = balance0();
         if (amount1 > 0) balance1Before = balance1();
+        //挖取回调
         IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
+        //安全检查
         if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
         if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
-
         emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
     }
     /// @inheritdoc IUniswapV3PoolActions
     /**
-     * 收集
+     * 提取手续费
      */
     function collect(
         address recipient,
@@ -521,11 +523,12 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint128 amount1Requested
     ) external override lock returns (uint128 amount0, uint128 amount1) {
         // we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
+        // 获取位置信息
         Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
-
+        //token0， token1 可提取的费用
         amount0 = amount0Requested > position.tokensOwed0 ? position.tokensOwed0 : amount0Requested;
         amount1 = amount1Requested > position.tokensOwed1 ? position.tokensOwed1 : amount1Requested;
-
+        //转账token0， token1费用给接收者
         if (amount0 > 0) {
             position.tokensOwed0 -= amount0;
             TransferHelper.safeTransfer(token0, recipient, amount0);
@@ -534,7 +537,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             position.tokensOwed1 -= amount1;
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
-
         emit Collect(msg.sender, recipient, tickLower, tickUpper, amount0, amount1);
     }
 

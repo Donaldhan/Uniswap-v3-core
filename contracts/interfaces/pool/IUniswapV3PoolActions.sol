@@ -32,7 +32,7 @@ interface IUniswapV3PoolActions {
         bytes calldata data
     ) external returns (uint256 amount0, uint256 amount1);
 
-    /// @notice Collects tokens owed to a position 收集给定位置的token；矫正token拥有的交易pair token的数量；
+    /// @notice Collects tokens owed to a position 收集给定位置的token；矫正token拥有的交易pair token的数量； 提取手续费
     /// @dev Does not recompute fees earned, which must be done either via mint or burn of any amount of liquidity.
     /// Collect must be called by the position owner. To withdraw only token0 or only token1, amount0Requested or
     /// amount1Requested may be set to zero. To withdraw all tokens owed, caller may pass any value greater than the

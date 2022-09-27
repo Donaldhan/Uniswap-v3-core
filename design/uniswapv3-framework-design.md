@@ -156,4 +156,5 @@ V3通过Position-Indexed State可以计算相应的uncollected fees。
 [uniswap-v3 blog](https://uniswap.org/blog/uniswap-v3/) 
 [jit-liquidity](https://uniswap.org/blog/jit-liquidity)  
 [graphical-guide-for-understanding-uniswap](https://docs.ethhub.io/guides/graphical-guide-for-understanding-uniswap/)    
+[什么是DeFi中的闪电贷？](https://academy.binance.com/zh/articles/what-are-flash-loans-in-defi)    
 
