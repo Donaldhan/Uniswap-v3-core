@@ -4,20 +4,21 @@ pragma solidity >=0.5.0;
 import './FullMath.sol';
 import './SqrtPriceMath.sol';
 
-/// @title Computes the result of a swap within ticks
+/// @title Computes the result of a swap within ticks 计算给定tick范围的swap结果
 /// @notice Contains methods for computing the result of a swap within a single tick price range, i.e., a single tick.
 library SwapMath {
     /// @notice Computes the result of swapping some amount in, or amount out, given the parameters of the swap
     /// @dev The fee, plus the amount in, will never exceed the amount remaining if the swap's `amountSpecified` is positive
-    /// @param sqrtRatioCurrentX96 The current sqrt price of the pool
-    /// @param sqrtRatioTargetX96 The price that cannot be exceeded, from which the direction of the swap is inferred
-    /// @param liquidity The usable liquidity
-    /// @param amountRemaining How much input or output amount is remaining to be swapped in/out
-    /// @param feePips The fee taken from the input amount, expressed in hundredths of a bip
-    /// @return sqrtRatioNextX96 The price after swapping the amount in/out, not to exceed the price target
-    /// @return amountIn The amount to be swapped in, of either token0 or token1, based on the direction of the swap
-    /// @return amountOut The amount to be received, of either token0 or token1, based on the direction of the swap
-    /// @return feeAmount The amount of input that will be taken as a fee
+    /// 
+    /// @param sqrtRatioCurrentX96 The current sqrt price of the pool 当前交易池流动性价格
+    /// @param sqrtRatioTargetX96 The price that cannot be exceeded, from which the direction of the swap is inferred  目标流动性价格
+    /// @param liquidity The usable liquidity 可用的流动性
+    /// @param amountRemaining How much input or output amount is remaining to be swapped in/out 
+    /// @param feePips The fee taken from the input amount, expressed in hundredths of a bip 
+    /// @return sqrtRatioNextX96 The price after swapping the amount in/out, not to exceed the price target 在swap后的流动性价格
+    /// @return amountIn The amount to be swapped in, of either token0 or token1, based on the direction of the swap 需要输入的token数量
+    /// @return amountOut The amount to be received, of either token0 or token1, based on the direction of the swap swap出的token数量
+    /// @return feeAmount The amount of input that will be taken as a fee 费用
     function computeSwapStep(
         uint160 sqrtRatioCurrentX96,
         uint160 sqrtRatioTargetX96,

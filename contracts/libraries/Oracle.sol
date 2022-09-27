@@ -153,15 +153,16 @@ library Oracle {
 
     /// @notice Fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied.
     /// The result may be the same observation, or adjacent observations.
+     /// 抓取给定目标的前驱和后继观察点，有可能一致，有可能是邻近观察点
     /// @dev The answer must be contained in the array, used when the target is located within the stored observation
     /// boundaries: older than the most recent observation and younger, or the same age as, the oldest observation
     /// @param self The stored oracle array
-    /// @param time The current block.timestamp
-    /// @param target The timestamp at which the reserved observation should be for
-    /// @param index The index of the observation that was most recently written to the observations array
-    /// @param cardinality The number of populated elements in the oracle array
-    /// @return beforeOrAt The observation recorded before, or at, the target
-    /// @return atOrAfter The observation recorded at, or after, the target
+    /// @param time The current block.timestamp 当前时间戳
+    /// @param target The timestamp at which the reserved observation should be for 目标时间戳
+    /// @param index The index of the observation that was most recently written to the observations array 最近观察点的索引
+    /// @param cardinality The number of populated elements in the oracle array 当前oracle中观察点数量
+    /// @return beforeOrAt The observation recorded before, or at, the target 目标或先驱观察点
+    /// @return atOrAfter The observation recorded at, or after, the target 目标或后继观察点
     function binarySearch(
         Observation[65535] storage self,
         uint32 time,
@@ -169,15 +170,15 @@ library Oracle {
         uint16 index,
         uint16 cardinality
     ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
-        uint256 l = (index + 1) % cardinality; // oldest observation
-        uint256 r = l + cardinality - 1; // newest observation
+        uint256 l = (index + 1) % cardinality; // oldest observation 最老的观察点
+        uint256 r = l + cardinality - 1; // newest observation 最新观察点
         uint256 i;
         while (true) {
             i = (l + r) / 2;
 
             beforeOrAt = self[i % cardinality];
 
-            // we've landed on an uninitialized tick, keep searching higher (more recently)
+            // we've landed on an uninitialized tick, keep searching higher (more recently) 跳过没有初始化的观察点
             if (!beforeOrAt.initialized) {
                 l = i + 1;
                 continue;
@@ -187,7 +188,7 @@ library Oracle {
 
             bool targetAtOrAfter = lte(time, beforeOrAt.blockTimestamp, target);
 
-            // check if we've found the answer!
+            // check if we've found the answer! 找到targetAtOrAfter
             if (targetAtOrAfter && lte(time, target, atOrAfter.blockTimestamp)) break;
 
             if (!targetAtOrAfter) r = i - 1;
@@ -197,10 +198,10 @@ library Oracle {
 
     /// @notice Fetches the observations beforeOrAt and atOrAfter a given target, i.e. where [beforeOrAt, atOrAfter] is satisfied
     /// @dev Assumes there is at least 1 initialized observation.
-    /// Used by observeSingle() to compute the counterfactual accumulator values as of a given block timestamp.
+    ///  抓取给定目标的前驱和后继观察点，有可能一致，有可能是邻近观察点
     /// @param self The stored oracle array
-    /// @param time The current block.timestamp
-    /// @param target The timestamp at which the reserved observation should be for
+    /// @param time The current block.timestamp 当前区块时间戳
+    /// @param target The timestamp at which the reserved observation should be for 目标时间戳
     /// @param tick The active tick at the time of the returned or simulated observation
     /// @param index The index of the observation that was most recently written to the observations array
     /// @param liquidity The total pool liquidity at the time of the call
@@ -219,10 +220,10 @@ library Oracle {
         // optimistically set before to the newest observation
         beforeOrAt = self[index];
 
-        // if the target is chronologically at or after the newest observation, we can early return
+        // if the target is chronologically at or after the newest observation, we can early return；目标在最新观察点或者之后
         if (lte(time, beforeOrAt.blockTimestamp, target)) {
-            if (beforeOrAt.blockTimestamp == target) {
-                // if newest observation equals target, we're in the same block, so we can ignore atOrAfter
+            if (beforeOrAt.blockTimestamp == target) {//为目标观察点
+                // if newest observation equals target, we're in the same block, so we can ignore atOrAfter 最新观察者为目标
                 return (beforeOrAt, atOrAfter);
             } else {
                 // otherwise, we need to transform
@@ -234,7 +235,7 @@ library Oracle {
         beforeOrAt = self[(index + 1) % cardinality];
         if (!beforeOrAt.initialized) beforeOrAt = self[0];
 
-        // ensure that the target is chronologically at or after the oldest observation
+        // ensure that the target is chronologically at or after the oldest observation 确保目标观察点，在最旧的观察点之后
         require(lte(time, beforeOrAt.blockTimestamp, target), 'OLD');
 
         // if we've reached this point, we have to binary search
@@ -245,15 +246,18 @@ library Oracle {
     /// 0 may be passed as `secondsAgo' to return the current cumulative values.
     /// If called with a timestamp falling between two observations, returns the counterfactual accumulator values
     /// at exactly the timestamp between the two observations.
+    /// 基于当前区块时间戳，往后推secondsAgo秒的观察点的累计时间tickCumulative和每个流动性运行的时间secondsPerLiquidityCumulativeX128
     /// @param self The stored oracle array
-    /// @param time The current block timestamp
-    /// @param secondsAgo The amount of time to look back, in seconds, at which point to return an observation
+    /// @param time The current block timestamp 当前时间戳
+    /// @param secondsAgo The amount of time to look back, in seconds, at which point to return an observation 后推的秒数secondsAgo
     /// @param tick The current tick
-    /// @param index The index of the observation that was most recently written to the observations array
+    /// @param index The index of the observation that was most recently written to the observations array 
     /// @param liquidity The current in-range pool liquidity
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulative The tick * time elapsed since the pool was first initialized, as of `secondsAgo`
+    ///
     /// @return secondsPerLiquidityCumulativeX128 The time elapsed / max(1, liquidity) since the pool was first initialized, as of `secondsAgo`
+    /// 
     function observeSingle(
         Observation[65535] storage self,
         uint32 time,
@@ -263,25 +267,25 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality
     ) internal view returns (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) {
-        if (secondsAgo == 0) {
+        if (secondsAgo == 0) {//返回最近最新写入的观察点
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
             return (last.tickCumulative, last.secondsPerLiquidityCumulativeX128);
         }
 
-        uint32 target = time - secondsAgo;
-
+        uint32 target = time - secondsAgo;//目标时间戳
+        //获取给定目标点的前驱和后继观察点
         (Observation memory beforeOrAt, Observation memory atOrAfter) =
             getSurroundingObservations(self, time, target, tick, index, liquidity, cardinality);
 
-        if (target == beforeOrAt.blockTimestamp) {
+        if (target == beforeOrAt.blockTimestamp) {//为前驱观察点
             // we're at the left boundary
             return (beforeOrAt.tickCumulative, beforeOrAt.secondsPerLiquidityCumulativeX128);
-        } else if (target == atOrAfter.blockTimestamp) {
+        } else if (target == atOrAfter.blockTimestamp) { //为后继观察点
             // we're at the right boundary
             return (atOrAfter.tickCumulative, atOrAfter.secondsPerLiquidityCumulativeX128);
         } else {
-            // we're in the middle
+            // we're in the middle 在中间
             uint32 observationTimeDelta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
             uint32 targetDelta = target - beforeOrAt.blockTimestamp;
             return (
@@ -300,6 +304,8 @@ library Oracle {
 
     /// @notice Returns the accumulator values as of each time seconds ago from the given time in the array of `secondsAgos`
     /// @dev Reverts if `secondsAgos` > oldest observation
+    ///  批量模式:
+    /// 基于当前区块时间戳，往后推secondsAgo秒的观察点的累计时间tickCumulative和每个流动性运行的时间secondsPerLiquidityCumulativeX128
     /// @param self The stored oracle array
     /// @param time The current block.timestamp
     /// @param secondsAgos Each amount of time to look back, in seconds, at which point to return an observation
