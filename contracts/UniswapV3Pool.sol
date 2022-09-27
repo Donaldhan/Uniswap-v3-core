@@ -550,6 +550,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int24 tickUpper,
         uint128 amount
     ) external override lock returns (uint256 amount0, uint256 amount1) {
+        //获取销毁流动性，需要输入的token0， token1的数量
         (Position.Info storage position, int256 amount0Int, int256 amount1Int) =
             _modifyPosition(
                 ModifyPositionParams({
@@ -562,7 +563,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         amount0 = uint256(-amount0Int);
         amount1 = uint256(-amount1Int);
-
+        //销毁流动性，添加费用到账户的费用收益 
         if (amount0 > 0 || amount1 > 0) {
             (position.tokensOwed0, position.tokensOwed1) = (
                 position.tokensOwed0 + uint128(amount0),
@@ -574,53 +575,53 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     }
     //swao缓存
     struct SwapCache {
-        // the protocol fee for the input token
+        // the protocol fee for the input token 协议费用
         uint8 feeProtocol;
-        // liquidity at the beginning of the swap
+        // liquidity at the beginning of the swap  swap开始的流动性
         uint128 liquidityStart;
-        // the timestamp of the current block
+        // the timestamp of the current block 当前区块时间戳
         uint32 blockTimestamp;
-        // the current value of the tick accumulator, computed only if we cross an initialized tick
+        // the current value of the tick accumulator, computed only if we cross an initialized tick 当前tick累计的时间
         int56 tickCumulative;
-        // the current value of seconds per liquidity accumulator, computed only if we cross an initialized tick
+        // the current value of seconds per liquidity accumulator, computed only if we cross an initialized tick 每个流动性单元运行时间
         uint160 secondsPerLiquidityCumulativeX128;
-        // whether we've computed and cached the above two accumulators
+        // whether we've computed and cached the above two accumulators 是否生成观察点
         bool computedLatestObservation;
     }
 
     // the top level state of the swap, the results of which are recorded in storage at the end
     //Swap状态
     struct SwapState {
-        // the amount remaining to be swapped in/out of the input/output asset
+        // the amount remaining to be swapped in/out of the input/output asset swap的剩余token储备量
         int256 amountSpecifiedRemaining;
-        // the amount already swapped out/in of the output/input asset
+        // the amount already swapped out/in of the output/input asset swap出的token数量
         int256 amountCalculated;
-        // current sqrt(price)
+        // current sqrt(price) 流动性价格
         uint160 sqrtPriceX96;
-        // the tick associated with the current price
+        // the tick associated with the current price 当前tick
         int24 tick;
-        // the global fee growth of the input token
+        // the global fee growth of the input token token全局增长费用
         uint256 feeGrowthGlobalX128;
-        // amount of input token paid as protocol fee
+        // amount of input token paid as protocol fee 协议费用
         uint128 protocolFee;
-        // the current liquidity in range
+        // the current liquidity in range tick流动性
         uint128 liquidity;
     }
     //计算步骤
     struct StepComputations {
-        // the price at the beginning of the step
+        // the price at the beginning of the step 开始步骤的流动性价格
         uint160 sqrtPriceStartX96;
-        // the next tick to swap to from the current tick in the swap direction
+        // the next tick to swap to from the current tick in the swap direction  下次swap的tick
         int24 tickNext;
-        // whether tickNext is initialized or not
+        // whether tickNext is initialized or not 下次swap的tick是否初始化
         bool initialized;
-        // sqrt(price) for the next tick (1/0)
+        // sqrt(price) for the next tick (1/0) 下次swap的tick流动性价格
         uint160 sqrtPriceNextX96;
-        // how much is being swapped in in this step
+        // how much is being swapped in in this step swap输入的token数量
         uint256 amountIn;
-        // how much is being swapped out
+        // how much is being swapped out swap输出的token数量
         uint256 amountOut;
-        // how much fee is being paid in
+        // how much fee is being paid in swap操作的交易费用
         uint256 feeAmount;
     }
 
