@@ -116,13 +116,43 @@ liquidity (𝑙): 用于表示上次位置点的虚拟流动性；
 * IUniswapV3PoolActions:主要用于初始化交易池，提供与交易核心操作，比如mint，burn，swap，flash等操作以及记录交易池快照信息increaseObservationCardinalityNext；
 * IUniswapV3PoolOwnerActions：提供设置交易协议费用和收集协议费用
 * IUniswapV3Factory：创建交易池（交易池token pair，及tick交易费用）；
+* UniswapV3Pool:提供mint，burn，swap，flash等核心实现，另外还有oralce的观察点记录；
+
+> UniswapV3Pool维护者交易者池的状态Slot0, 当前流动性，token0和token1的当前累计费用，tick信息，tick bitMap信息，用户流动性位置信息，及oralce观察点信息；
+1. 交易者池的状态Slot0：主要有当前价格sqrt(x*y)，tick，最近观察点索引，当前存储观察点数量，下次需要存储的观察点索引，协议费用以及交易池是否锁住；
+2. tick信息: 维护每个tick的信息，主要有当前tick流动性，流动性网格数量，tick范围外的token0和token1的fee，相对于当前tick外的每个流动性单元运行时间seconds，当前tick外的花费总时间seconds；
+3. tick bitMap信息：每个tick的状态等信息；
+4. 用户流动性位置信息：用户在tick上线限之间的流动，token0和token1收益， 及流动性fee
+
+
+
+
+
+
 
 
 
 # todo
+在 v3 版本中，因为一个交易池中会有多个不同深度的流动池（每一个可以单独设置交易价格区间），
+因此一次交易的过程可能跨越多个不同的深度：
 
-blog
+当价格变化时，流动池中的总流动性也会随之变化
 
+
+一个交易还可能跨越不同的流动性阶段（即可能超出或者进入某个流动性），
+因此合约需要维护每个用户提供流动性的价格边界，当价格到达边界时，
+需要在总流动性上增加或移除对应流动性大小
+
+
+
+
+
+tick 管理
+简单说，一个 tick 就代表 Uniswap 价格的等比数列中的某一个价格，
+因此每一个用户提供的流动性的价格边界可以用 ticklower 和 tickupper 来表示
+
+Uniswap 不需要记录每个 tick 所有的信息，只需要记录所有作为 upper/lower 
+tick 所包含的流动性元数据即可
 
 
 # 总结

@@ -74,9 +74,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// @inheritdoc IUniswapV3PoolState 交易池状态
     Slot0 public override slot0;
 
-    /// @inheritdoc IUniswapV3PoolState token0的全局增加费用
+    /// @inheritdoc IUniswapV3PoolState token0的全局费用
     uint256 public override feeGrowthGlobal0X128;
-    /// @inheritdoc IUniswapV3PoolState token1的全局增加费用
+    /// @inheritdoc IUniswapV3PoolState token1的全局费用
     uint256 public override feeGrowthGlobal1X128;
 
     // accumulated protocol fees in token0/token1 units 累计的协议费用
@@ -573,9 +573,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         emit Burn(msg.sender, tickLower, tickUpper, amount, amount0, amount1);
     }
-    //swao缓存
+    //swap缓存
     struct SwapCache {
-        // the protocol fee for the input token 协议费用
+        // the protocol fee for the input token 协议费用；token0的费用为低4为，token1为高四位
         uint8 feeProtocol;
         // liquidity at the beginning of the swap  swap开始的流动性
         uint128 liquidityStart;
@@ -639,29 +639,29 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         require(amountSpecified != 0, 'AS');
 
         Slot0 memory slot0Start = slot0;
-
+        //确保没有lock 
         require(slot0Start.unlocked, 'LOK');
         require(
             zeroForOne
-                ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
-                : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,
+                ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO //token0-》token1
+                : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,  //token1-》token0
             'SPL'
         );
 
         slot0.unlocked = false;
-
+       //swap 缓存 
         SwapCache memory cache =
             SwapCache({
                 liquidityStart: liquidity,
                 blockTimestamp: _blockTimestamp(),
-                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),
+                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),//协议费用
                 secondsPerLiquidityCumulativeX128: 0,
                 tickCumulative: 0,
                 computedLatestObservation: false
             });
-
+        //添加流动性  
         bool exactInput = amountSpecified > 0;
-
+        //Swap状态 
         SwapState memory state =
             SwapState({
                 amountSpecifiedRemaining: amountSpecified,
@@ -674,11 +674,12 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
+        // 继续swap，只要没有使用完所有input/output和达到价格限制
         while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {
-            StepComputations memory step;
+            StepComputations memory step;  //计算步骤
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96;
-
+            //计算步骤下一个tick
             (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
                 state.tick,
                 tickSpacing,
@@ -686,16 +687,18 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             );
 
             // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
+            // 确保不会超过tick的边界， tick bitMap 不会意识到这个问题
             if (step.tickNext < TickMath.MIN_TICK) {
                 step.tickNext = TickMath.MIN_TICK;
             } else if (step.tickNext > TickMath.MAX_TICK) {
                 step.tickNext = TickMath.MAX_TICK;
             }
 
-            // get the price for the next tick
+            // get the price for the next tick 下一个tick的价格
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
 
             // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
+            // 计算在给定tick和价格下的可以swap的数量，或者input/output耗尽
             (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPriceX96,
                 (zeroForOne ? step.sqrtPriceNextX96 < sqrtPriceLimitX96 : step.sqrtPriceNextX96 > sqrtPriceLimitX96)
@@ -706,32 +709,34 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 fee
             );
 
-            if (exactInput) {
+            if (exactInput) {//输入
                 state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();
-                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());
-            } else {
-                state.amountSpecifiedRemaining += step.amountOut.toInt256();
+                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256()); 
+            } else {//置换出
+                state.amountSpecifiedRemaining += step.amountOut.toInt256(); 
                 state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());
             }
 
             // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+            // 如果有协议费用，则计算应得费用，减少feeAmount， 增加协议费用
             if (cache.feeProtocol > 0) {
                 uint256 delta = step.feeAmount / cache.feeProtocol;
                 step.feeAmount -= delta;
                 state.protocolFee += uint128(delta);
             }
 
-            // update global fee tracker
+            // update global fee tracker 全局费用
             if (state.liquidity > 0)
                 state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
-            // shift tick if we reached the next price
+            // shift tick if we reached the next price 达到下一个价格
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
                 // if the tick is initialized, run the tick transition
-                if (step.initialized) {
+                if (step.initialized) {// 已初始化
                     // check for the placeholder value, which we replace with the actual value the first time the swap
                     // crosses an initialized tick
                     if (!cache.computedLatestObservation) {
+                        //重新计算最新的观察点
                         (cache.tickCumulative, cache.secondsPerLiquidityCumulativeX128) = observations.observeSingle(
                             cache.blockTimestamp,
                             0,
@@ -742,6 +747,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                         );
                         cache.computedLatestObservation = true;
                     }
+                    //流动性网格
                     int128 liquidityNet =
                         ticks.cross(
                             step.tickNext,
@@ -767,6 +773,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         // update tick and write an oracle entry if the tick change
         if (state.tick != slot0Start.tick) {
+            //写入观察点
             (uint16 observationIndex, uint16 observationCardinality) =
                 observations.write(
                     slot0Start.observationIndex,
@@ -792,7 +799,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         // update fee growth global and, if necessary, protocol fees
         // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees
-        if (zeroForOne) {
+       // 更新全局费用及协议费用
+        if (zeroForOne) { 
             feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
             if (state.protocolFee > 0) protocolFees.token0 += state.protocolFee;
         } else {
@@ -801,17 +809,19 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         }
 
         (amount0, amount1) = zeroForOne == exactInput
-            ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
+            ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)//token0->token1
             : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);
 
         // do the transfers and collect payment
-        if (zeroForOne) {
+        if (zeroForOne) {//token0->token1
+            //swap token1 给接收者
             if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));
 
             uint256 balance0Before = balance0();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
             require(balance0Before.add(uint256(amount0)) <= balance0(), 'IIA');
         } else {
+            //swap token0 给接受者
             if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));
 
             uint256 balance1Before = balance1();
@@ -835,12 +845,12 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     ) external override lock noDelegateCall {
         uint128 _liquidity = liquidity;
         require(_liquidity > 0, 'L');
-
+        //计算token0， token1的费用
         uint256 fee0 = FullMath.mulDivRoundingUp(amount0, fee, 1e6);
         uint256 fee1 = FullMath.mulDivRoundingUp(amount1, fee, 1e6);
         uint256 balance0Before = balance0();
         uint256 balance1Before = balance1();
-
+        //转账给接收者
         if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
 
@@ -853,6 +863,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         require(balance1Before.add(fee1) <= balance1After, 'F1');
 
         // sub is safe because we know balanceAfter is gt balanceBefore by at least fee
+        //sub是安全的，因为balanceAfter大于balanceBefore
         uint256 paid0 = balance0After - balance0Before;
         uint256 paid1 = balance1After - balance1Before;
 
@@ -860,12 +871,14 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             uint8 feeProtocol0 = slot0.feeProtocol % 16;
             uint256 fees0 = feeProtocol0 == 0 ? 0 : paid0 / feeProtocol0;
             if (uint128(fees0) > 0) protocolFees.token0 += uint128(fees0);
+            //更新token0的全局费用
             feeGrowthGlobal0X128 += FullMath.mulDiv(paid0 - fees0, FixedPoint128.Q128, _liquidity);
         }
         if (paid1 > 0) {
             uint8 feeProtocol1 = slot0.feeProtocol >> 4;
             uint256 fees1 = feeProtocol1 == 0 ? 0 : paid1 / feeProtocol1;
             if (uint128(fees1) > 0) protocolFees.token1 += uint128(fees1);
+            //更新token1的全局费用
             feeGrowthGlobal1X128 += FullMath.mulDiv(paid1 - fees1, FixedPoint128.Q128, _liquidity);
         }
 
