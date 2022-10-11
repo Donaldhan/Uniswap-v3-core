@@ -30,6 +30,17 @@ Liquidity Orace：v3同时每个区块基于秒级的seconds-weighted accumulato
 
 
 # 集中流动性实现
+
+> 价格精度问题
+因为用户可以在任意 [P0,P1] 价格区间内提供流动性，Uniswap v3 需要保存每一个用户提供流动性的边界价格，即 P0 和 P1。这样就引入了一个新的问题，假设两个用户提供的流动性价格下限分别是 5.00000001 和 5.00000002，那么 Uniswap 需要标记价格为 5.00000001 和 5.00000002 的对应的流动性大小。同时当交易发生时，需要将 [5.00000001,5.00000002] 作为一个单独的价格区间进行计算。这样会导致：
+
+几乎很难有两个流动性设置相同的价格边界，这样会导致消耗大量合约存储空间保存这些状态
+当进行交易计算时，价格变化被切分成很多个小的范围区间，需要逐一分段进行计算，这会消耗大量的 gas，并且如果范围的价差太小，可能会引发计算精度的问题
+Uniswap v3 解决这个问题的方式是，将 [Pmin,Pmax] 这一段连续的价格范围为，分割成有限个离散的价格点。每一个价格对应一个 tick，用户在设置流动性的价格区间时，只能选择这些离散的价格点中的某一个作为流动性的边界价格。
+
+Uniswap v3 采用了等比数列的形式确定价格数列，公比为 1.0001。即下一个价格点为当前价格点的 100.01%;如此一来 Uniswap v3 可以提供比较细粒度的价格选择范围（每个可选价格之间的差值为 0.01%），同时又可以将计算的复杂度控制在一定范围内。
+
+
 1. 将流动池的tick化，每个tick粒度，默认为0.01；pool将会追踪没有tick的每秒的sqrt价格；在初始化时，tick没有暂用的情况下，可以初始化；
 2. pool初始化时，会设置tickSpacing，只有tickSpacing允许的范围内，才能添加到pool中，比如如果tickSpacing设为2,则(...-4, -2, 0, 2, 4...)形式的tick才可以初始化；
 3. 为了确保正确数量的流动性的加入和退出，pool合约将会追踪pool的全局状态，每个tick及没有位置的状态；
@@ -110,9 +121,11 @@ liquidity (𝑙): 用于表示上次位置点的虚拟流动性；
 
 # 合约
 
+## v3-core
+提供swap相关的路由操作，针对
 
 * IUniswapV3PoolImmutables：交易池常量，比如：工厂地址、交易pair， token0，token1的地址，及tickspacing和每个池的最大流动性；
-* IUniswapV3PoolImmutables：用户记录交易池的状态，比如tick的费用信息，以及tick的oracle追踪信息（observations）；
+* IUniswapV3PoolState：用户记录交易池的状态，比如tick的费用信息，以及tick的oracle追踪信息（observations）；
 * IUniswapV3PoolActions:主要用于初始化交易池，提供与交易核心操作，比如mint，burn，swap，flash等操作以及记录交易池快照信息increaseObservationCardinalityNext；
 * IUniswapV3PoolOwnerActions：提供设置交易协议费用和收集协议费用
 * IUniswapV3Factory：创建交易池（交易池token pair，及tick交易费用）；
@@ -127,32 +140,30 @@ liquidity (𝑙): 用于表示上次位置点的虚拟流动性；
 
 
 
+## v3-periphery
+
+* NonfungiblePositionManager:非同质位置管理器，提供流动mint，增加，减少操作，以及收益费用的收集；在mint流动性时，同时会创建基于位置的NFT；
+* NonfungibleTokenPositionDescriptor:提供生成位置NFT描述URL；
+* SwapRouter: swap操作：根据输入token，swap出尽可能大的另一个token；swap评估操作：根据输入的token数量，需要输入的最小另外一个token的数量，并支付相应的费用到收费账户；
+
+针对用户swap的tokenIn和tokenOut交易池不存在时，uniswap前端将会生成相应的路径，委托给SwapRouter进行swap操作；
+多路径的的情况编码为：token0+fee01+token1+fee12+token2+fee23+token3+fee34+token4+..., 这种是针对swap是如果没有对应的交易对pair，则从不同的
+交易池进行swap， 比如使用token0，想swap token3，整个swap的路径为（token0+fee01+token1，token1+fee12+token2，token2+fee23+token3），使用token0从
+pool01中swap出token1，使用swap出的token1从pool12中swap出token2， 使用swap出的token2从pool23中swap出token3；
+
+
+* V3Migrator: 从V2流动性，迁移到V3，可以指定迁移流动性百分比，没有迁移的将会退回给；
+
+Path：交易池路径工具，路径实际编码为token0地址+fee+token1地址  ；
+PoolAddress:交易池地址工具，根据交易池key，包含token0地址，token1地址，fee，生成交易池地址；
+PeripheryPaymentsWithFee：提供带续费费用的支付，支持eth和token；
+PeripheryPayments：提供支付操作，支持eth和token；
+Multicall：批量调用代理合约；
 
 
 
 
 
-# todo
-在 v3 版本中，因为一个交易池中会有多个不同深度的流动池（每一个可以单独设置交易价格区间），
-因此一次交易的过程可能跨越多个不同的深度：
-
-当价格变化时，流动池中的总流动性也会随之变化
-
-
-一个交易还可能跨越不同的流动性阶段（即可能超出或者进入某个流动性），
-因此合约需要维护每个用户提供流动性的价格边界，当价格到达边界时，
-需要在总流动性上增加或移除对应流动性大小
-
-
-
-
-
-tick 管理
-简单说，一个 tick 就代表 Uniswap 价格的等比数列中的某一个价格，
-因此每一个用户提供的流动性的价格边界可以用 ticklower 和 tickupper 来表示
-
-Uniswap 不需要记录每个 tick 所有的信息，只需要记录所有作为 upper/lower 
-tick 所包含的流动性元数据即可
 
 
 # 总结
@@ -164,10 +175,17 @@ uniswapV3主要是解决uniswapV2基于常量的AMM极端情况下的流动性�
 解决集中流动性，涉及每个tick内的交易fee，已经跨tick的交易费用，比如可能大于tick的上限，也可能小于tick的下限，或者不在整个tick的bit map范围之内，需要计算相应的费用。
 V3通过 Global State和Tick-Indexed State来解决这些问题；
 
-
-
 针对虚拟流动性，有些流动性不能反映从合约创建时的fee，我们称为uncollected fees，
 V3通过Position-Indexed State可以计算相应的uncollected fees。
+
+针对用户swap的tokenIn和tokenOut交易池不存在时，uniswap前端将会生成相应的路径，委托给SwapRouter进行swap操作；
+
+
+多路径的的情况编码为：token0+fee01+token1+fee12+token2+fee23+token3+fee34+token4+..., 这种是针对swap是如果没有对应的交易池，则从不同的
+交易池进行swap， 比如使用token0，想swap token3，整个swap的路径为（token0+fee01+token1，token1+fee12+token2，token2+fee23+token3），使用token0从
+pool01中swap出token1，使用swap出的token1从pool12中swap出token2， 使用swap出的token2从pool23中swap出token3；
+
+
 
 
 
