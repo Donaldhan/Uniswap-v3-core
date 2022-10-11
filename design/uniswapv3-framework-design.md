@@ -73,7 +73,7 @@ Liquidity Orace：v3同时每个区块基于秒级的seconds-weighted accumulato
 
 * 交易操作（swap）
 ![uniswapv3-swap](/image/uniswapv3/uniswapv3-swap.png)
-输入给定的eth,根据当前交易池价格swap出相应的USDT。
+输入给定的eth,根据当前交易池价格swap出相应的USDT。兑换时，前端将会拉取当前交易池的最优交易价格（oracle的TWAP），进行swap操作。
 
 
 * 交易列表
