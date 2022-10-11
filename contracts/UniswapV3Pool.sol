@@ -504,7 +504,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint256 balance1Before;
         if (amount0 > 0) balance0Before = balance0();
         if (amount1 > 0) balance1Before = balance1();
-        //挖取回调
+        //挖取回调，如果需要跟path swap， 需要继续进行swap操作
         IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
         //安全检查
         if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
