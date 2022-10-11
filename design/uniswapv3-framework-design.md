@@ -199,6 +199,7 @@ v3合约作最重要的两个模块交易池核心v3-core和外围的swap路由�
 * IUniswapV3PoolOwnerActions：提供设置交易协议费用和收集协议费用
 * IUniswapV3Factory：创建交易池（交易池token pair，及tick交易费用）；
 * UniswapV3Pool:提供mint，burn，swap，flash，及collect(销毁流动性之后提取自己资产及fee收益)等核心实现，另外还有oralce的观察点记录；
+Oracle提供的价格信息，可以体用第三方DEX，进行清算；
 
 > UniswapV3Pool维护者交易者池的状态Slot0, 当前流动性，token0和token1的当前累计费用，tick信息，tick bitMap信息，用户流动性位置信息，及oralce观察点信息；
 
@@ -207,6 +208,16 @@ v3合约作最重要的两个模块交易池核心v3-core和外围的swap路由�
 3. tick bitMap信息：每个tick的状态等信息；
 4. 用户流动性位置信息：用户在tick上线限之间的流动，token0和token1收益， 及流动性fee
 
+
+![uniswap-v3-liquity-tick-position](/image/uniswapv3/uniswap-v3-liquity-tick-position.png)
+
+
+每个交易池根据token0和token1的地址及交易费fee来创建，相同token0和token1，fee不同的，则会重建一个新的交易池；在同一个交易池，不同的用户可以添加自己的流动性价格区间位置，每个交易池
+会将所有的用户位置价格区间分别以tick进行分割，交易池的流动所有的ticks使用TickBitMap进行管理；用户swap时将会根据价格限制，从交易池的TickBitMap中筛选出最优的tick的流动区间进行swap，
+如果tick的流动性区间属于某个用户，则将交易费直接给相应的用户，否则将费用平均分配给覆盖tick的位置的用户（???），并更新用户的位置费用信息。
+
+如上图所示在同一个交易池内，用户A添加价格区间位置流动性Pab，流动性为400；用户B添加添加价格区间位置流动性Pcd，流动性为300；
+在tick1到tick4（Pa-Pc）区间流动为用户A添加的流动性为400，在tick4到tick5（Pc-Pb）区间流动性为用户A，用户B流动性的叠加为700，在tick5-tick7（Pb-Pd）区间流动性为用户B提供的流动性为300；
 
 
 
