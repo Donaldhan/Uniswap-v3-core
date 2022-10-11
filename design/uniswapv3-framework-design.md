@@ -209,7 +209,7 @@ Oracle提供的价格信息，可以体用第三方DEX，进行清算；
 4. 用户流动性位置信息：用户在tick上线限之间的流动，token0和token1收益， 及流动性fee
 
 
-![uniswap-v3-liquity-tick-position](/image/uniswapv3/uniswap-v3-liquity-tick-position.png)
+![uniswap-v3-pool-liquity-tick-position](/image/uniswapv3/uniswap-v3-pool-liquity-tick-position.png)
 
 
 每个交易池根据token0和token1的地址及交易费fee来创建，相同token0和token1，fee不同的，则会重建一个新的交易池；在同一个交易池，不同的用户可以添加自己的流动性价格区间位置，每个交易池
