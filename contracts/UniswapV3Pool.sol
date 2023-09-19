@@ -628,6 +628,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// @inheritdoc IUniswapV3PoolActions
     /**
      * swap 
+     * sqrtPriceLimitX96:https://y1cunhui.github.io/uniswapV3-book-zh-cn/docs/milestone_3/slippage-protection/ 滑点的价格保护
      */
     function swap(
         address recipient,
